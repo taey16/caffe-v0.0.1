@@ -1,0 +1,35 @@
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+
+# User specific environment and startup programs
+
+MATLAB_ROOT=/Applications/MATLAB_R2014a.app/
+MAGICK_ROOT=/usr/local/ImageMagick-6.9.1/
+CELLAR_ROOT=/usr/local/Cellar/
+ANACONDA_ROOT=$HOME/anaconda/
+CUDA_ROOT=/usr/local/cuda/
+CAFFE_ROOT=/works/caffe/
+MYSQL_ROOT=/usr/local/mysql/
+TORCH_ROOT=$HOME/torch/
+
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$MATLAB_ROOT/bin/:$MAGICK_ROOT/bin/:$CELLAR_ROOT/protobuf/2.6.1/bin/:$PATH
+#export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$MATLAB_ROOT/bin/:$PATH
+# added by Anaconda 2.3.0 installer
+export PATH=$ANACONDA_ROOT/bin:/usr/local/opt/coreutils/libexec/gnubin:$TORCH_ROOT/install/bin:$PATH
+export DYLD_LIBRARY_PATH=/usr/local/opt/protobuf/lib/:/usr/local/opt/hdf5/lib/:$ANACONDA_ROOT/lib:$MYSQL_ROOT/lib:
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+export DYLD_FALLBACK_LIBRARY_PATH=$CUDA_ROOT/lib:$ANACONDA_ROOT/lib:/usr/local/lib:/usr/lib:$CELLAR_ROOT/hdf5/:$CELLAR_ROOT:$DYLD_FALLBACK_LIBRARY_PATH
+export PYTHONPATH=$CAFFE_ROOT/python:
+
+# to avoid dyld: Symbol not found: _sqlite3_intarray_bind
+# uncommant following command
+unset DYLD_LIBRARY_PATH
+export DYLD_LIBRARY_PATH=/usr/local/opt/protobuf/lib/:/usr/local/opt/hdf5/lib/:$MYSQL_ROOT/lib:$TORCH_ROOT/install/lib:
+
+# for torch
+export LUA_PATH='/Users/1002596/.luarocks/share/lua/5.1/?.lua;/Users/1002596/.luarocks/share/lua/5.1/?/init.lua;/Users/1002596/torch/install/share/lua/5.1/?.lua;/Users/1002596/torch/install/share/lua/5.1/?/init.lua;./?.lua;/Users/1002596/torch/install/share/luajit-2.1.0-alpha/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua'
+export LUA_CPATH='/Users/1002596/.luarocks/lib/lua/5.1/?.so;/Users/1002596/torch/install/lib/lua/5.1/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so'
