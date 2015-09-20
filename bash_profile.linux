@@ -1,0 +1,40 @@
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+  . ~/.bashrc
+fi
+
+# Setting for the new UTF-8 terminal support
+export LC_CTYPE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+ANACONDA_HOME=$HOME/anaconda
+CUDA_HOME=/usr/local/cuda
+MATLAB_HOME=/usr/local/MATLAB/R2014a
+CAFFE_HOME=$HOME/Documents/caffe
+TORCH_HOME=$HOME/torch
+
+export PATH=$ANACONDA_HOME/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$CUDA_HOME/bin:$MATLAB_HOME/bin:$TORCH_HOME/install/bin
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$ANACONDA_HOME/lib:
+#export LD_LIBRARY_PATH=$CUDA_HOME/lib64:
+export PYTHONPATH=$CAFFE_HOME/python:
+
+#if you got following error
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFIsTiled@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFOpen@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFReadEncodedStrip@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFSetField@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFWriteScanline@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFGetField@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFScanlineSize@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFSetWarningHandler@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFSetErrorHandler@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFReadEncodedTile@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFReadRGBATile@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFClose@LIBTIFF_4.0'
+#/usr/lib/x86_64-linux-gnu/libopencv_highgui.so: undefined reference to `TIFFRGBAImageOK@LIBTIFF_4.0'
+#remove $ANACONDA_HOME/lib
+
+# .build_release/tools/caffe: error while loading shared libraries: libhdf5_hl.so.10: cannot open shared object file: No such file or directory
+# add ANACONDA_HOME/lib
