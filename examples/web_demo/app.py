@@ -24,7 +24,7 @@ import caffe;
 from caffe import caffe_utils as caffe_utils
 
 # lstm import
-RNN_ROOT = '/works/neuraltalk/'
+RNN_ROOT = '/works/nt/'
 sys.path.append(RNN_ROOT)
 from imagernn.solver import Solver
 from imagernn.imagernn_utils import decodeGenerator, eval_split
@@ -174,8 +174,7 @@ class ImagenetClassifier(object):
 
   # lstm params
   rnn_params = {}
-  #rnn_params['checkpoint_path'] = '%s/cv/coco/model_checkpoint_coco_SKP1002596MN001.local_baseline_12.39.p' % RNN_ROOT
-  rnn_params['checkpoint_path'] = '%s/cv/coco/model_checkpoint_coco_SKP1002596MN001.local_baseline_11.14.p' % RNN_ROOT
+  rnn_params['checkpoint_path'] = '%s/cv/coco/model_checkpoint_coco.local.p' % RNN_ROOT
 
   # reference database
   database_param = '%s' % DATABASE_FILENAME
