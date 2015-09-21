@@ -17,7 +17,7 @@ import exifutil
 import PIL.Image
 
 # caffe import
-CAFFE_ROOT = '/works/caffe-recurrent/'
+CAFFE_ROOT = '/works/caffe/'
 import sys
 sys.path.insert(0, CAFFE_ROOT + 'python')
 import caffe;
