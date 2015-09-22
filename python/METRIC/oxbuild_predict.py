@@ -29,7 +29,7 @@ FEATURE_DIM_GOOGLE = 1024
 FEATURE_DIM_VGG = 4096
 
 if __name__ == '__main__':
-  #import pdb; pdb.set_trace()
+  import pdb; pdb.set_trace()
   caffe.set_mode_cpu()
   net_google= caffe.Classifier( MODEL_GOOGLE_DEPLOY_FILE, MODEL_GOOGLE_WEIGHT_FILE, mean = MODEL_MEAN_VALUE, channel_swap = (2, 1, 0) ) 
   net_vgg   = caffe.Classifier( MODEL_VGG_DEPLOY_FILE, MODEL_VGG_WEIGHT_FILE, mean = MODEL_MEAN_VALUE, channel_swap = (2, 1, 0) ) 
@@ -64,4 +64,4 @@ if __name__ == '__main__':
     if (n+1) % 1 == 0: print 'End of ', n+1; sys.stdout.flush()
 
   # save mat format
-  sio.savemat('%s_vggoogle_fc6_pool5_7x7_s1.mat' % DATASET_LIST, {'filenames': filenames, 'feat_vgg': feat_vgg, 'feat_google': feat_google})
+  sio.savemat('%s_%dx%d_vggoogle_fc6_pool5_7x7_s1.mat' % (DATASET_LIST, MODEL_ORIGINAL_INPUT_SIZE[0], MODEL_ORIGINAL_INPUT_SIZE[1]), {'filenames': filenames, 'feat_vgg': feat_vgg, 'feat_google': feat_google})
