@@ -24,7 +24,7 @@ import caffe;
 from caffe import caffe_utils as caffe_utils
 
 # lstm import
-RNN_ROOT = '/works/nt/'
+RNN_ROOT = '/works/neuraltalk/'
 sys.path.append(RNN_ROOT)
 from imagernn.solver import Solver
 from imagernn.imagernn_utils import decodeGenerator, eval_split
@@ -33,8 +33,8 @@ from imagernn.imagernn_utils import decodeGenerator, eval_split
 DATABASE_NAME = 'CDVS_Dataset'
 DATABASE_ROOT = '/storage/%s/' % DATABASE_NAME
 DATABASE_FILENAME = '%s/database_images.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle' % DATABASE_ROOT
-#DATABASE_FILENAME = '/storage/holidays/holidays_images.dat_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle'
-#DATABASE_FILENAME = '/storage/ukbench/ukbench_image.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle'
+#DATABASE_FILENAME = '%s/holidays_images.dat_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle' % DATABASE_ROOT
+#DATABASE_FILENAME = '%s/ukbench_image.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle' % DATABASE_ROOT
 NUM_NEIGHBOR = 10
 REPO_DIRNAME = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + '/../..')
 UPLOAD_FOLDER = '/tmp/caffe_demos_uploads'
@@ -172,10 +172,6 @@ class ImagenetClassifier(object):
   default_args['image_dim'] = 256
   default_args['raw_scale'] = 255.
 
-  # lstm params
-  rnn_params = {}
-  rnn_params['checkpoint_path'] = '%s/cv/coco/model_checkpoint_coco.local.p' % RNN_ROOT
-
   # reference database
   database_param = '%s' % DATABASE_FILENAME
 
@@ -198,15 +194,6 @@ class ImagenetClassifier(object):
       image_dims=(image_dim, image_dim), raw_scale=raw_scale, 
       mean=np.float32([104.0, 116.0, 122.0]), channel_swap=(2, 1, 0))
     logging.info('Load vision model, %s', self.googlenet_args['model_def_file'])
-    # language model
-    self.rnn_params['beam_size'] = 10
-    self.rnn_checkpoint = cPickle.load(open(self.rnn_params['checkpoint_path'], 'rb'))
-    self.rnn_checkpoint_params = self.rnn_checkpoint['params']
-    self.rnn_model = self.rnn_checkpoint['model']
-    self.rnn_ixtoword = self.rnn_checkpoint['ixtoword']
-    self.rnn_BatchGenerator = decodeGenerator(self.rnn_checkpoint)
-    self.rnn_kwparams = { 'beam_size' : self.rnn_params['beam_size'] }
-    logging.info('Load LSTM model, %s', self.rnn_params['checkpoint_path'])
 
     # generate N bit lookup table
     self.lookup = np.asarray([bin(i).count('1') for i in range(1<<16)])
@@ -251,8 +238,6 @@ class ImagenetClassifier(object):
       fea = (np.hstack((np.packbits(np.uint8(feat > 0), axis=1)))).astype(np.uint16)
       fea_shift = fea << 8
       fea = fea_shift[0::2] + fea[1::2]
-      logging.info("query shape: {}".format(fea.shape))
-      logging.info('ref shape: {}'.format(self.database['ref'].shape))
       enrolled_img_path = '/enroll/' + filename
       self.database['dic_ref'][self.database['ref'].shape[0]] = str(enrolled_img_path)
       self.database['dic_idx'][enrolled_img_path] = self.database['ref'].shape[0]
@@ -281,19 +266,6 @@ class ImagenetClassifier(object):
       indices = (-scores).argsort()[:5]
       predictions = self.labels[indices]
   
-      # extract features for language decoder
-      code_image = self.net.blobs['relu7'].data
-      logging.info('Feature extraction done, relu7, norm-1: %s', str(np.linalg.norm(code_image[4,:],1)))
-
-      # assign image vector into initial state in lstm
-      img = {}; img['feat'] = code_image[4,:]
-      Ys = self.rnn_BatchGenerator.predict([{'image':img}], self.rnn_model, self.rnn_checkpoint_params, **self.rnn_kwparams)
-      # get word sequence and convert them into words
-      top_predictions = Ys[0]
-      top_prediction = top_predictions[0]
-      candidate = ' '.join([self.rnn_ixtoword[ix] for ix in top_prediction[1] if ix > 0])
-      logging.info('Description: %f %s', top_prediction[0], str(candidate))
-
       # extract features for retrieval
       logging.info('fc6 shape: {}'.format(self.net.blobs['fc6'].data.shape))
       logging.info('pool5/7x7_s1 shape: {}'.format(self.net_google.blobs['pool5/7x7_s1'].data.shape))
@@ -325,20 +297,6 @@ class ImagenetClassifier(object):
         # CDVS_Dataset
         result_neighbor.append('10.202.211.120:2596/PBrain/CDVS_Dataset/%s' % (self.database['dic_ref'][neighbor]))
 
-
-      """
-      current_top = -100000
-      for state in range(10):
-        img = {}; img['feat'] = code_image[state,:]
-        Ys = self.rnn_BatchGenerator.predict([{'image':img}], self.rnn_model, self.rnn_checkpoint_params, **self.rnn_kwparams)
-        top_predictions = Ys[0]
-        top_prediction = top_predictions[0]
-        cand = ' '.join([self.rnn_ixtoword[ix] for ix in top_prediction[1] if ix > 0])
-        logging.info('description: %f %s', top_prediction[0], str(cand))
-        if top_prediction[0] > current_top:
-          current_top = top_prediction[0]; candidate = cand
-      """
-
       # In addition to the prediction text, we will also produce
       # the length for the progress bar visualization.
       meta = [
@@ -356,7 +314,7 @@ class ImagenetClassifier(object):
       bet_result = [(self.bet['words'][v], '%.5f' % expected_infogain[v]) for v in infogain_sort[:5]]
       logging.info('bet result: %s', str(bet_result))
 
-      return (True, meta, bet_result, '%.3f' % (endtime - starttime), str(candidate), result_neighbor)
+      return (True, meta, bet_result, '%.3f' % (endtime - starttime), str(''), result_neighbor)
 
     except Exception as err:
       logging.info('Classification error: %s', err)
