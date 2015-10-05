@@ -55,19 +55,21 @@ if __name__ == '__main__':
   sum_ap, num_query = 0., 0.
   for query_fname, gt_result in gt.iteritems():
     query_id = dic_idx[query_fname]
-    start = time.time()
+    global_time = time.time()
+    #start = time.time()
     diff = np.bitwise_xor(fea[query_id], fea)
-    print "bitwise_xor time: %.2gs" % (time.time() - start)
-    start = time.time()
+    #print "bitwise_xor time: %.2gs" % (time.time() - start)
+    #start = time.time()
     diff = lookup[diff]
-    print "lookup time: %.2gs" % (time.time() - start)
-    start = time.time()
+    #print "lookup time: %.2gs" % (time.time() - start)
+    #start = time.time()
     dist = np.sum(diff, axis=1)
-    print "sum over time: %.2gs" % (time.time() - start)
+    #print "sum over time: %.2gs" % (time.time() - start)
 
-    start = time.time()
+    #start = time.time()
     results = np.argsort(dist)
-    print "sort time: %.2gs" % (time.time() - start)
+    #print "sort time: %.2gs" % (time.time() - start)
+    print "global: %.2gs" %(time.time() - global_time)
 
     #import pdb; pdb.set_trace()
     print_str = 'End of %s\n' % query_fname

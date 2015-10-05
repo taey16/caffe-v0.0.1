@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.io as sio
-import sys
+import sys, time
 import compute_ap
 
 #loop-up lookup for N bit
@@ -12,28 +12,10 @@ DATASET_GT_LIST = 'oxbuild_gt.txt'
 
 INPUT_MAT_FILENAME = 'oxbuild_images.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat'
 
-"""
-def score_ap_from_ranks_1 (ranks, nres):
-  # accumulate trapezoids in PR-plot
-  ap=0.0
-  # All have an x-size of:
-  recall_step=1.0/nres
-  for ntp,rank in enumerate(ranks):
-    # y-size on left side of trapezoid:
-    # ntp = nb of true positives so far
-    # rank = nb of retrieved items so far
-    if rank==0: precision_0=1.0
-    else: precision_0=ntp/float(rank)
-    # y-size on right side of trapezoid:
-    # ntp and rank are increased by one
-    precision_1=(ntp+1)/float(rank+1)
-    ap+=(precision_1+precision_0)*recall_step/2.0
-  return ap
-"""
 
 if __name__ == '__main__':
 
-  import pdb; pdb.set_trace()
+  #import pdb; pdb.set_trace()
   gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')[::2]] for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_LIST))])
   mat = sio.loadmat('%s/%s' % (DATASET_ROOT, INPUT_MAT_FILENAME))
   fea_vgg, fea_google, filename = mat['feat_vgg'].astype(np.float32), mat['feat_google'].astype(np.float32), mat['filenames']
@@ -48,16 +30,18 @@ if __name__ == '__main__':
   fea_shift = fea << 8
   fea = fea_shift[:,0::2] + fea[:,1::2]
 
-  import pdb; pdb.set_trace()
+  #import pdb; pdb.set_trace()
   sum_ap, num_query = 0., 0.
   for query_fname, gt_result in gt.iteritems():
     query_id = dic_idx[query_fname]
+    global_time = time.time()
     diff = np.bitwise_xor(fea[query_id], fea)
     diff = lookup[diff]
     dist = np.sum(diff, axis=1)
 
     results = np.argsort(dist)
     #results = results[1:]
+    print 'global: %.2gs' % (time.time() - global_time)
 
     #import pdb; pdb.set_trace()
     print_str = 'End of %s\n' % query_fname
