@@ -355,7 +355,7 @@ def start_from_terminal(app):
   parser.add_option(
     '-g', '--gpu',
     help="use gpu mode",
-    action='store_true', default=True)
+    action='store_true', default=False)
 
   opts, args = parser.parse_args()
   ImagenetClassifier.default_args.update({'gpu_mode': opts.gpu})
