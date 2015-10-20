@@ -51,7 +51,4 @@ for k, v in gt.items():
   for item in v:
    fo_r.write(item.strip() + '\n')
 
-fo_q.close()
-fo_r.close()
-
 print 'End'

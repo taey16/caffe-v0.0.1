@@ -59,7 +59,7 @@ def get_groundtruth():
   images)"""
   gt={}
   allnames=set()
-  for line in open("/storage/holidays/holidays_images.dat","r"):
+  for line in open("holidays_images.dat","r"):
     imname=line.strip()
     allnames.add(imname)
     imno=int(imname[:-len(".jpg")])    

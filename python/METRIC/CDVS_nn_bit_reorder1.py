@@ -1,11 +1,11 @@
 import numpy as np
 import scipy.io as sio
 import sys
+from compute_ap import *
+from pop_counter import *
 
-#loop-up lookup for N bit
-N = 16; lookup = np.asarray([bin(i).count('1') for i in range(1<<N)])
 
-CATE_ID = '5'
+CATE_ID = '1a'
 
 DATASET_ROOT = '/storage/CDVS_Dataset/'
 DATASET_INPUT_LIST = '%s_retrieval.txt' % CATE_ID
@@ -16,31 +16,12 @@ MAT_R_FILENAME = '%s/database_images.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat' 
 FEATURE_JITTER = 10
 FEATURE_NORM = 2
 
-def score_ap_from_ranks_1 (ranks, nres):
-  """ Compute the average precision of one search.
-  ranks = ordered list of ranks of true positives
-  nres  = total number of positives in dataset  
-  """
-  # accumulate trapezoids in PR-plot
-  ap=0.0
-  # All have an x-size of:
-  recall_step=1.0/nres
-  for ntp,rank in enumerate(ranks):
-    # y-size on left side of trapezoid:
-    # ntp = nb of true positives so far
-    # rank = nb of retrieved items so far
-    if rank==0: precision_0=1.0
-    else: precision_0=ntp/float(rank)
-    # y-size on right side of trapezoid:
-    # ntp and rank are increased by one
-    precision_1=(ntp+1)/float(rank+1)
-    ap+=(precision_1+precision_0)*recall_step/2.0
-  return ap
 
 if __name__ == '__main__':
 
   #import pdb; pdb.set_trace()
-  gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')] for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_LIST), 'r')])
+  gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')] \
+            for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_LIST), 'r')])
   mat = sio.loadmat(MAT_Q_FILENAME)
   query_vgg, query_google, filename_query = mat['feat_vgg'].astype(np.float32), mat['feat_google'].astype(np.float32), mat['filenames']
   mat = sio.loadmat(MAT_R_FILENAME)

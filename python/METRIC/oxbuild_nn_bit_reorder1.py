@@ -1,10 +1,8 @@
 import numpy as np
 import scipy.io as sio
 import sys, time
-import compute_ap
-
-#loop-up lookup for N bit
-N = 16; lookup = np.asarray([bin(i).count('1') for i in range(1<<N)])
+from compute_ap import *
+from pop_counter import *
 
 DATASET_ROOT = '/storage/oxbuild/'
 DATASET_INPUT_LIST = 'oxbuild_images.txt'
@@ -16,17 +14,22 @@ INPUT_MAT_FILENAME = 'oxbuild_images.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat'
 if __name__ == '__main__':
 
   #import pdb; pdb.set_trace()
-  gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')[::2]] for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_LIST))])
+  gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')[::2]] \
+            for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_LIST))])
   mat = sio.loadmat('%s/%s' % (DATASET_ROOT, INPUT_MAT_FILENAME))
-  fea_vgg, fea_google, filename = mat['feat_vgg'].astype(np.float32), mat['feat_google'].astype(np.float32), mat['filenames']
+  fea_vgg = mat['feat_vgg'].astype(np.float32)
+  fea_google = mat['feat_google'].astype(np.float32)
+  filename = mat['filenames']
+
   dic_ref, dic_idx = {}, {}
   for n, fname in enumerate(filename):
     dic_ref[n] = str(fname.strip()); dic_idx[str(fname.strip())] = n
 
-  fea_vgg = np.reshape(fea_vgg, (fea_vgg.shape[0],fea_vgg.shape[1]*fea_vgg.shape[2]))
-  fea_google = np.reshape(fea_google, (fea_google.shape[0],fea_google.shape[1]*fea_google.shape[2]))
+  fea_vgg   =np.reshape(fea_vgg,   (fea_vgg.shape[0],fea_vgg.shape[1]*fea_vgg.shape[2]))
+  fea_google=np.reshape(fea_google,(fea_google.shape[0],fea_google.shape[1]*fea_google.shape[2]))
 
-  fea = (np.hstack((np.packbits(np.uint8(fea_vgg > 0), axis=1), np.packbits(np.uint8(fea_google > 0), axis=1)))).astype(np.uint16)
+  fea = (np.hstack((np.packbits(np.uint8(fea_vgg   >0), axis=1), \
+                    np.packbits(np.uint8(fea_google>0), axis=1)))).astype(np.uint16)
   fea_shift = fea << 8
   fea = fea_shift[:,0::2] + fea[:,1::2]
 
@@ -58,7 +61,7 @@ if __name__ == '__main__':
       if ref_fname in gt_result: 
         tp_ranks.append(n)
 
-    sum_ap += compute_ap.score_ap_from_ranks_1(tp_ranks, len(gt_result[1:]))
+    sum_ap += score_ap_from_ranks_1(tp_ranks, len(gt_result[1:]))
     num_query += 1.
     tp_ranks_str = ''
     for rrr in tp_ranks:

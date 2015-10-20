@@ -63,6 +63,13 @@ SCRIPT_MOUSE_OVER = '<script>\n \
   });\n \
 </script>\n'
 
+CATE_ID = '5'
+
+PJT_ROOT = '/works/METRIC/'
+LOG_FILENAME = 'log_%s.log' % CATE_ID
+URL_PREFIX = 'http://10.202.211.120:2596/PBrain/CDVS_Dataset/'
+DATASET_ROOT = '/storage/CDVS_Dataset/'
+DATASET_GT_FILENAME = '%s_retrieval.txt' % CATE_ID
 
 def generate_html( results, gt ):
   fo = open('%s/%s.html' % (PJT_ROOT, LOG_FILENAME), 'w')
@@ -92,14 +99,6 @@ def generate_html( results, gt ):
   fo.write('</body>\n')
   fo.write('</html>\n')
   fo.close()
-
-
-## main
-PJT_ROOT = '/works/METRIC/'
-LOG_FILENAME = 'holidays.log'
-URL_PREFIX = 'http://10.202.211.120:2596/PBrain/holidays/jpg'
-DATASET_ROOT = '/storage/holidays/'
-DATASET_GT_FILENAME = 'perfect_result.dat'
 
 gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')] for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_FILENAME), 'r')])
 

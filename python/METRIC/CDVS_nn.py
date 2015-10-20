@@ -2,7 +2,7 @@ import numpy as np
 import scipy.io as sio
 import sys
 
-CATE_ID = '4'
+CATE_ID = '5'
 
 DATASET_ROOT = '/storage/CDVS_Dataset/'
 DATASET_INPUT_LIST = '%s_retrieval.txt' % CATE_ID

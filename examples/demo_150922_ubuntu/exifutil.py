@@ -5,7 +5,8 @@ This script handles the skimage exif problem.
 from PIL import Image
 import numpy as np
 
-ORIENTATIONS = {   # used in apply_orientation
+ORIENTATIONS = {   
+  # used in apply_orientation
   2: (Image.FLIP_LEFT_RIGHT,),
   3: (Image.ROTATE_180,),
   4: (Image.FLIP_TOP_BOTTOM,),

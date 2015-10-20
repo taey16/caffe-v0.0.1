@@ -1,17 +1,13 @@
 import numpy as np
 import scipy.io as sio
-import sys
+import sys, time
 
-DATASET_ROOT = '/storage/holidays/'
-DATASET_INPUT_LIST = 'eval_holidays/holidays_images.dat'
-DATASET_GT_LIST = 'eval_holidays/perfect_result.dat'
+DATASET_ROOT = '/storage/ukbench/'
+DATASET_INPUT_LIST = 'ukbench_image.txt'
+DATASET_GT_LIST = 'ukbench_gt.txt'
 
-#INPUT_MAT_FILENAME = 'holidays_images.dat_384x384_vggoogle_fc6_pool5_7x7_s1.mat'
-#INPUT_MAT_FILENAME = 'holidays_images.dat_vggoogle_fc6_pool5_7x7_s1.mat'
-INPUT_MAT_FILENAME = '%s/holidays_images.dat_256x256_vgg_siamese_fc6.mat' % DATASET_ROOT
+INPUT_MAT_FILENAME = 'ukbench_image.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat'
 
-FEATURE_JITTER = 10
-FEATURE_NORM = 1
 
 def score_ap_from_ranks_1 (ranks, nres):
   """ Compute the average precision of one search.
@@ -27,7 +23,7 @@ def score_ap_from_ranks_1 (ranks, nres):
     # ntp = nb of true positives so far
     # rank = nb of retrieved items so far
     if rank==0: precision_0=1.0
-    else:       precision_0=ntp/float(rank)
+    else: precision_0=ntp/float(rank)
     # y-size on right side of trapezoid:
     # ntp and rank are increased by one
     precision_1=(ntp+1)/float(rank+1)
@@ -36,55 +32,51 @@ def score_ap_from_ranks_1 (ranks, nres):
 
 
 if __name__ == '__main__':
+  #import pdb; pdb.set_trace()
   filenames = [entry.strip() for entry in open('%s/%s' % (DATASET_ROOT, DATASET_INPUT_LIST))]
   gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')[::2]] for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_LIST))])
-  mat = sio.loadmat(INPUT_MAT_FILENAME)
-  vgg, filename = mat['feat_vgg'].astype(np.float32), mat['filenames']
-  fea_vgg = np.zeros_like(vgg)
-  #fea_vgg = vgg
-  import pdb; pdb.set_trace()
+  mat = sio.loadmat('%s/%s' % (DATASET_ROOT, INPUT_MAT_FILENAME))
+  fea_vgg, fea_google, filename = mat['feat_vgg'].astype(np.float32), mat['feat_google'].astype(np.float32), mat['filenames']
 
   dic_ref, dic_idx = {}, {}
   for n, fname in enumerate(filename):
-    dic_ref[n], dic_idx[fname] = fname, n
-
-  if FEATURE_JITTER == 1:
-    for n, fea in enumerate(vgg): fea_vgg[n] = fea / np.linalg.norm(fea, FEATURE_NORM)
-  else:
-    for n, fea in enumerate(vgg): fea_vgg[n] = (fea.T / np.linalg.norm(fea.T, FEATURE_NORM, axis=0)).T
+    dic_ref[n] = fname; dic_idx[fname] = n
 
   sum_ap, num_query = 0., 0.
+  #fea_vgg, fea_google = fea_vgg > 0, fea_google > 0 
+  fea_vgg, fea_google = np.packbits(np.uint8(fea_vgg > 0), axis=2), np.packbits(np.uint8(fea_google > 0), axis=2)
   for query_fname, gt_result in gt.iteritems():
     query_id = dic_idx[query_fname]
-    diff_vgg = fea_vgg[query_id] - fea_vgg
-    if FEATURE_JITTER == 1:
-      # L2 dist.
-      #dist = np.sqrt(np.sum(diff**2, axis=1))
-      # L1 dist.
-      dist = np.sum(np.abs(diff), axis=1)
-    else:
-      #dist = np.mean(np.sqrt(np.sum(diff_vgg ** 2, axis=2)), axis=1)
-      dist = np.mean(np.sum(np.abs(diff_vgg), axis=2), axis=1)
+    start = time.time()
+    diff_vgg, diff_google = np.bitwise_xor(fea_vgg[query_id], fea_vgg), np.bitwise_xor(fea_google[query_id], fea_google) 
+    dist_vgg = np.sum(diff_vgg , axis=2)
+    dist_google = np.sum(diff_google, axis=2)
+    dist = np.sum(np.hstack((dist_vgg, dist_google)), axis=1)
+    print "hd time: %.2gs" % (time.time() - start)
 
+    start = time.time()
     results = np.argsort(dist)
-    results = results[1:]
+    print "sort time: %.2gs" % (time.time() - start)
 
+    #import pdb; pdb.set_trace()
     print_str = 'End of %s\n' % query_fname
     for r, nn in enumerate(results):
       if r > 10: break
       print_str = print_str + '%s||%.4f ' %  (dic_ref[nn], dist[nn])
     print print_str
 
+    #import pdb; pdb.set_trace()
     tp_ranks = []
     for n, img_idx in enumerate(results):
       ref_fname = dic_ref[img_idx]
-      if ref_fname in gt_result:
+      if ref_fname in gt_result[1:]: 
         tp_ranks.append(n)
 
-    sum_ap += score_ap_from_ranks_1(tp_ranks, len(gt_result)-1); num_query += 1.
+    sum_ap += score_ap_from_ranks_1(tp_ranks, len(gt_result[1:]))
+    num_query += 1.
     tp_ranks_str = ''
     for rrr in tp_ranks:
-      tp_ranks_str += str(rrr) + ' '
+      tp_ranks_str += str(rrr) + ' ' 
     print tp_ranks_str
     print 'mAP: ', sum_ap / num_query; sys.stdout.flush()
 

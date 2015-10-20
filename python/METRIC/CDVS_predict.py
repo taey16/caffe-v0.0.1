@@ -12,29 +12,30 @@ MODEL_GOOGLE_WEIGHT_FILE = '%s/models/bvlc_googlenet/bvlc_googlenet.caffemodel' 
 MODEL_VGG_DEPLOY_FILE = '%s/models/vgg/vgg_layer16_deploy.prototxt' % CAFFE_ROOT
 MODEL_VGG_WEIGHT_FILE = '%s/models/vgg/vgg_layer16.caffemodel' % CAFFE_ROOT
 
-MODEL_ORIGINAL_INPUT_SIZE = 256, 256
+MODEL_ORIGINAL_INPUT_SIZE = 384, 384
 MODEL_INPUT_SIZE = 224, 224
-MODEL_MEAN_VALUE = np.float32([104.0, 116.0, 122.0]) # bvlc_googlenet
+#MODEL_MEAN_VALUE = np.float32([104.0, 116.0, 122.0]) # bvlc_googlenet
+MODEL_MEAN_VALUE = np.float32([103.939, 116.779, 123.68]) # vgg
 
 DATASET_ROOT = '/storage/CDVS_Dataset/'
 #DATASET_LIST = 'database_images.txt'
 #DATASET_LIST = '2_retrieval.txt'
 #DATASET_LIST = '3_retrieval.txt'
-#DATASET_LIST = '5_retrieval.txt'
 #DATASET_LIST = '4_retrieval.txt'
-#DATASET_LIST = '1a_retrieval.txt'
+#DATASET_LIST = '5_retrieval.txt'
+DATASET_LIST = '1a_retrieval.txt'
 #DATASET_LIST = '1c_retrieval.txt'
-DATASET_LIST = '1b_retrieval.txt'
+#DATASET_LIST = '1b_retrieval.txt'
 
 
 FEATURE_JITTER = 10
 FEATURE_DIM_GOOGLE = 1024
 FEATURE_DIM_VGG = 4096
 
-MAT_FILENAME = '%s_vggoogle_fc6_pool5_7x7_s1.mat' % DATASET_LIST
+MAT_FILENAME = '%s_%dx%d_vggoogle_fc6_pool5_7x7_s1.mat' % (DATASET_LIST, MODEL_ORIGINAL_INPUT_SIZE[0], MODEL_ORIGINAL_INPUT_SIZE[1])
 
 if __name__ == '__main__':
-  import pdb; pdb.set_trace()
+  #import pdb; pdb.set_trace()
   caffe.set_mode_gpu()
   net_google= caffe.Classifier( MODEL_GOOGLE_DEPLOY_FILE, MODEL_GOOGLE_WEIGHT_FILE, mean = MODEL_MEAN_VALUE, channel_swap = (2, 1, 0) ) 
   net_vgg   = caffe.Classifier( MODEL_VGG_DEPLOY_FILE, MODEL_VGG_WEIGHT_FILE, mean = MODEL_MEAN_VALUE, channel_swap = (2, 1, 0) ) 

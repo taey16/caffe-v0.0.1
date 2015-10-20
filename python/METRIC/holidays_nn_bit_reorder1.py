@@ -1,9 +1,8 @@
 import numpy as np
 import scipy.io as sio
 import sys, time
-
-#loop-up lookup for N bit
-N = 16; lookup = np.asarray([bin(i).count('1') for i in range(1<<N)])
+from compute_ap import *
+from pop_counter import *
 
 DATASET_ROOT = '/storage/holidays/'
 DATASET_INPUT_LIST = 'eval_holidays/holidays_images.dat'
@@ -12,28 +11,6 @@ DATASET_GT_LIST = 'eval_holidays/perfect_result.dat'
 #INPUT_MAT_FILENAME = 'holidays_images.dat_512x512_vggoogle_fc6_pool5_7x7_s1.mat'
 INPUT_MAT_FILENAME = 'holidays_images.dat_384x384_vggoogle_fc6_pool5_7x7_s1.mat'
 #INPUT_MAT_FILENAME = 'holidays_images.dat_vggoogle_fc6_pool5_7x7_s1.mat'
-
-def score_ap_from_ranks_1 (ranks, nres):
-  """ Compute the average precision of one search.
-  ranks = ordered list of ranks of true positives
-  nres  = total number of positives in dataset  
-  """
-  # accumulate trapezoids in PR-plot
-  ap=0.0
-  # All have an x-size of:
-  recall_step=1.0/nres
-  for ntp,rank in enumerate(ranks):
-    # y-size on left side of trapezoid:
-    # ntp = nb of true positives so far
-    # rank = nb of retrieved items so far
-    if rank==0: precision_0=1.0
-    else:       precision_0=ntp/float(rank)
-    # y-size on right side of trapezoid:
-    # ntp and rank are increased by one
-    precision_1=(ntp+1)/float(rank+1)
-    ap+=(precision_1+precision_0)*recall_step/2.0
-  return ap
-
 
 if __name__ == '__main__':
   filenames = [entry.strip() \
@@ -51,16 +28,15 @@ if __name__ == '__main__':
   #fea_vgg = fea_vgg - np.mean(np.reshape(fea_vgg, (1491*10, 4096)), axis=0)
   #fea_google= fea_google - np.mean(np.reshape(fea_google, (1491*10, 1024)), axis=0)
 
-  fea_vgg = np.reshape(fea_vgg, (fea_vgg.shape[0],fea_vgg.shape[1]*fea_vgg.shape[2]))
-  fea_google = np.reshape(fea_google, (fea_google.shape[0],fea_google.shape[1]*fea_google.shape[2]))
+  fea_vgg   =np.reshape(fea_vgg,   (fea_vgg.shape[0],fea_vgg.shape[1]*fea_vgg.shape[2]))
+  fea_google=np.reshape(fea_google,(fea_google.shape[0],fea_google.shape[1]*fea_google.shape[2]))
 
   #import pdb; pdb.set_trace()
   sum_ap, num_query = 0., 0.
-  fea = np.uint16(np.hstack((np.packbits(np.uint8(fea_vgg > 0), axis=1), np.packbits(np.uint8(fea_google>0), axis=1))))
+  fea = np.uint16(np.hstack((np.packbits(np.uint8(fea_vgg   >0), axis=1), 
+                             np.packbits(np.uint8(fea_google>0), axis=1))))
   fea_shift = fea << 8
   fea = fea_shift[:,0::2] + fea[:,1::2]
-  #fea = np.packbits(np.uint8(fea_vgg > 0), axis=1)
-  #fea = np.packbits(np.uint8(fea_google > 0), axis=1)
 
   for query_fname, gt_result in gt.iteritems():
     query_id = dic_idx[query_fname]

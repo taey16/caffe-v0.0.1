@@ -90,7 +90,7 @@
       {% if has_result %}
         {% if not result[0] %}
           <!-- we have error in the result. -->
-          <div class="alert alert-danger">{{ result[1] }} Did you provide a valid URL or a valid image file? </div>
+          <div class="alert alert-danger">{{ result[1] }}</div>
         {% else %}
           <div>
             <h4>Auto-tagging</h4>
@@ -143,12 +143,20 @@
 
           <h3>Matched images</h3>
             <table class="d_table">
+              <!-- 
               {% for item in result[5] %}
                 <tr>
                   <td>
-                    <a href="/classify_url?imageurl=http://{{item}}"><img src="http://{{item}}_thumb.jpg" height="340" width="340"></td></a>
+                    <a href="/classify_url?imageurl=http://{{item}}"><img src="http://{{item}}" height="340" width="340"></td></a>
                 </tr>
               {% endfor %}
+              -->
+              <tr>
+                {% for item in result[5] %}
+                  <td>
+                    <a href="/classify_url?imageurl=http://{{item}}"><img src="http://{{item}}" height="340" width="340"></td></a>
+                {% endfor %}
+              </tr>
             </table>
             <p>{{ result[3] }} sec.</p>
           {% endif %}

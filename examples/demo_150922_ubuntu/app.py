@@ -1,7 +1,5 @@
-import os, sys
-import time
+import os, sys, time, datetime
 import cPickle
-import datetime
 import logging
 import flask
 import werkzeug
@@ -30,16 +28,15 @@ from imagernn.solver import Solver
 from imagernn.imagernn_utils import decodeGenerator, eval_split
 
 
-DATABASE_NAME = 'CDVS_Dataset'
-DATABASE_ROOT = '/storage/%s/' % DATABASE_NAME
-DATABASE_FILENAME = '%s/database_images.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle' % DATABASE_ROOT
-#DATABASE_FILENAME = '%s/holidays_images.dat_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle' % DATABASE_ROOT
-#DATABASE_FILENAME = '%s/ukbench_image.txt_384x384_vggoogle_fc6_pool5_7x7_s1.mat.bit.pickle' % DATABASE_ROOT
-NUM_NEIGHBOR = 10
+#DATABASE_FILENAME = '/storage/product/11st_6M/11st_6M_image_list.txt.shuffle.txt.bit.pickle'
+DATABASE_FILENAME = '/storage/product/det/unique-labeller_eng_20150625144012.csv.cate_bbox.csv.shuffle_00.csv.readable_only.csv.bit.pickle.webpath.pickle'
+#DATABASE_FILENAME = '/storage/product/11st_6M/11st_380K.shuffle.webpath.bit.pickle'
+NUM_NEIGHBORS = 10
 REPO_DIRNAME = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + '/../..')
 UPLOAD_FOLDER = '/tmp/caffe_demos_uploads'
-ENROLL_FOLDER = '/storage/CDVS_Dataset/enroll/'
+ENROLL_FOLDER = '/storage/product/det/enroll/'
 ALLOWED_IMAGE_EXTENSIONS = set(['png', 'bmp', 'jpg', 'jpe', 'jpeg', 'gif'])
+
 
 # Obtain the flask app object
 app = flask.Flask(__name__)
@@ -83,10 +80,10 @@ def enroll_upload():
     imagefile.save(filename)
     image = exifutil.open_oriented_im(filename)
     im = PIL.Image.fromarray(np.asarray(image * 255.).astype(np.uint8))
-    im = im.resize( (256, 256), PIL.Image.ANTIALIAS )
-    thumb_filename = filename + '_thumb.jpg'
+    im = im.resize( (384, 384), PIL.Image.ANTIALIAS )
+    thumb_filename = filename #+ '_thumb.jpg'
     im.save(thumb_filename)
-    scp_command = 'scp %s 1002596@10.202.211.120:/storage/CDVS_Dataset/enroll/' % thumb_filename
+    scp_command = 'scp %s 1002596@10.202.211.120:%s' % (thumb_filename, ENROLL_FOLDER)
     os.system(scp_command)
     logging.info('Saving to %s. done', thumb_filename)
     logging.info('%s done', scp_command)
@@ -99,7 +96,8 @@ def enroll_upload():
     )
 
   result = app.clf.enroll_image(image, filename_)
-  return flask.render_template('index.html', has_result=True, result=result, imagesrc=embed_image_html(image))
+  return flask.render_template('index.html', \
+    has_result=True, result=result, imagesrc=embed_image_html(image))
 
 
 @app.route('/classify_upload', methods=['POST'])
@@ -122,7 +120,8 @@ def classify_upload():
     )
 
   result = app.clf.classify_image(image)
-  return flask.render_template('index.html', has_result=True, result=result, imagesrc=embed_image_html(image))
+  return flask.render_template('index.html', \
+    has_result=True, result=result, imagesrc=embed_image_html(image))
 
 
 def embed_image_html(image):
@@ -172,7 +171,7 @@ class ImagenetClassifier(object):
       raise Exception(
         "File for {} is missing. Should be at: {}".format(key, val))
 
-  default_args['image_dim'] = 256
+  default_args['image_dim'] = 384
   default_args['raw_scale'] = 255.
 
   # reference database
@@ -238,9 +237,9 @@ class ImagenetClassifier(object):
       feat = np.hstack((feat_vgg,feat_google))
       logging.info('feat shape: {}'.format(feat.shape))
       # binalize and 16bit-bitpacking
-      fea = (np.hstack((np.packbits(np.uint8(feat > 0), axis=1)))).astype(np.uint16)
+      fea = (np.packbits(np.uint8(feat > 0), axis=1)).astype(np.uint16)
       fea_shift = fea << 8
-      fea = fea_shift[0::2] + fea[1::2]
+      fea = fea_shift[:,0::2] + fea[:,1::2]
       enrolled_img_path = '/enroll/' + filename
       self.database['dic_ref'][self.database['ref'].shape[0]] = str(enrolled_img_path)
       self.database['dic_idx'][enrolled_img_path] = self.database['ref'].shape[0]
@@ -248,10 +247,12 @@ class ImagenetClassifier(object):
       logging.info("query shape: {}".format(fea.shape))
       logging.info('ref shape: {}'.format(self.database['ref'].shape))
       logging.info('Enroll done')
+      return (False, 'Enroll complete')
     except Exception as err:
       logging.info('Enroll error: %s', err)
-      return (False, 'Something went wrong when enrolling the ' 'image. Maybe try another one?')
-      
+      return (False, \
+        'Something went wrong when enrolling the ' 'image. Maybe try another one?')
+  
 
   def classify_image(self, image):
     try:
@@ -299,14 +300,18 @@ class ImagenetClassifier(object):
       logging.info("dist shape: {}".format(dist.shape))
       logging.info("neighbor shape: {}".format(neighbor_list.shape))
       result_neighbor = []
-      for n, neighbor in enumerate(neighbor_list[0:NUM_NEIGHBOR]):
+      for n, neighbor in enumerate(neighbor_list[0:NUM_NEIGHBORS]):
         logging.info("top-{}: {}, {}".format(n, self.database['dic_ref'][neighbor], dist[neighbor]))
         # ukb
         #result_neighbor.append('10.202.211.120:2596/PBrain/ukbench/full/%s' % (self.database['dic_ref'][neighbor]))
         # holidays
         #result_neighbor.append('10.202.211.120:2596/PBrain/holidays/jpg/%s' % (self.database['dic_ref'][neighbor]))
         # CDVS_Dataset
-        result_neighbor.append('10.202.211.120:2596/PBrain/CDVS_Dataset/%s' % (self.database['dic_ref'][neighbor]))
+        #result_neighbor.append('10.202.211.120:2596/PBrain/CDVS_Dataset/%s' % (self.database['dic_ref'][neighbor]))
+        # det_Dataset
+        #result_neighbor.append('10.202.211.120:2596/PBrain/product/det/%s' % (self.database['dic_ref'][neighbor]))
+        # general web path
+        result_neighbor.append('10.202.211.120:2596/PBrain/%s' % (self.database['dic_ref'][neighbor]))
 
       # In addition to the prediction text, we will also produce
       # the length for the progress bar visualization.
@@ -355,7 +360,7 @@ def start_from_terminal(app):
   parser.add_option(
     '-g', '--gpu',
     help="use gpu mode",
-    action='store_true', default=False)
+    action='store_true', default=True)
 
   opts, args = parser.parse_args()
   ImagenetClassifier.default_args.update({'gpu_mode': opts.gpu})

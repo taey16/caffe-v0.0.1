@@ -64,7 +64,7 @@ SCRIPT_MOUSE_OVER = '<script>\n \
 </script>\n'
 
 
-def generate_html( results, gt ):
+def generate_html( results ):
   fo = open('%s/%s.html' % (PJT_ROOT, LOG_FILENAME), 'w')
   fo.write('<html>\n')
   fo.write(HEADER)
@@ -78,10 +78,11 @@ def generate_html( results, gt ):
     for path in r:
       fo.write('<td>\n')
       doc_path, distance = path.split('||')[0], path.split('||')[1]
-      if doc_path in gt[q]: 
-        fo.write('<img img class="image_show" src=\"%s/%s\" height=\"128\" width=\"128\" style="border: 4px solid #aB12c3">' % (URL_PREFIX, doc_path)) 
-      else:
-        fo.write('<img img class="image_show" src=\"%s/%s\" height=\"128\" width=\"128\">' % (URL_PREFIX, doc_path)) 
+      #if doc_path in gt[q]: 
+      #  fo.write('<img img class="image_show" src=\"%s/%s\" height=\"128\" width=\"128\" style="border: 4px solid #aB12c3">' % (URL_PREFIX, doc_path)) 
+      #else:
+      #  fo.write('<img img class="image_show" src=\"%s/%s\" height=\"128\" width=\"128\">' % (URL_PREFIX, doc_path)) 
+      fo.write('<img img class="image_show" src=\"%s/%s\" height=\"128\" width=\"128\">' % (URL_PREFIX, doc_path)) 
       fo.write('</br><font size=2>%s</font>' % distance )
       fo.write('</td>\n')
     fo.write('</tr>\n')
@@ -96,12 +97,9 @@ def generate_html( results, gt ):
 
 ## main
 PJT_ROOT = '/works/METRIC/'
-LOG_FILENAME = 'holidays.log'
-URL_PREFIX = 'http://10.202.211.120:2596/PBrain/holidays/jpg'
-DATASET_ROOT = '/storage/holidays/'
-DATASET_GT_FILENAME = 'perfect_result.dat'
-
-gt = dict([[entry.strip().split(' ')[0], entry.strip().split(' ')] for entry in open('%s/%s' % (DATASET_ROOT, DATASET_GT_FILENAME), 'r')])
+LOG_FILENAME = 'det.log'
+URL_PREFIX = 'http://10.202.211.120:2596/PBrain/product/det/'
+DATASET_ROOT = '/storage/product/det/'
 
 entries = [entry.strip() for entry in open('%s/%s' % (PJT_ROOT, LOG_FILENAME), 'r')]
 import pdb; pdb.set_trace()
@@ -122,11 +120,11 @@ if len(query) <> len(ranked_list):
 
 results = {}
 for n, q in enumerate(query):
-  if n == 70: break
+  if n == 1000: break
   q = q.split(' ')[-1]
   short_list = ranked_list[n].split(' ')
   results[q] = short_list
 
 import pdb; pdb.set_trace()
-generate_html( results, gt )
+generate_html( results )
 

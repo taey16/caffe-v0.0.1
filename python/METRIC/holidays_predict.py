@@ -16,7 +16,7 @@ MODEL_VGG_DEPLOY_FILE = '%s/models/vgg/vgg_layer16_deploy_feature_fc6.prototxt' 
 MODEL_VGG_WEIGHT_FILE = '%s/models/vgg/vgg_layer16.caffemodel' % CAFFE_ROOT
 #LAYER_NAME = ['pool5', 'fc6', 'fc7', 'fc8', 'prob'] # vgg
 
-MODEL_ORIGINAL_INPUT_SIZE = 384, 384
+MODEL_ORIGINAL_INPUT_SIZE = 512, 512
 MODEL_INPUT_SIZE = 224, 224
 MODEL_MEAN_VALUE = np.float32([104.0, 116.0, 122.0]) # bvlc_googlenet
 #MODEL_MEAN_VALUE = np.float32([103.939, 116.779, 123.68]) # vgg-16
@@ -28,9 +28,11 @@ FEATURE_JITTER = 10
 FEATURE_DIM_GOOGLE = 1024
 FEATURE_DIM_VGG = 4096
 
+OUTPUT_MAT_FILENAME = '%s_%dx%d_vggoogle_fc6_pool5_7x7_s1.mat' % (DATASET_LIST, MODEL_ORIGINAL_INPUT_SIZE[0], MODEL_ORIGINAL_INPUT_SIZE[1])
+
 if __name__ == '__main__':
   #import pdb; pdb.set_trace()
-  caffe.set_mode_cpu()
+  caffe.set_mode_gpu()
   net_google= caffe.Classifier( MODEL_GOOGLE_DEPLOY_FILE, MODEL_GOOGLE_WEIGHT_FILE, mean = MODEL_MEAN_VALUE, channel_swap = (2, 1, 0) ) 
   net_vgg   = caffe.Classifier( MODEL_VGG_DEPLOY_FILE, MODEL_VGG_WEIGHT_FILE, mean = MODEL_MEAN_VALUE, channel_swap = (2, 1, 0) ) 
 
@@ -43,6 +45,8 @@ if __name__ == '__main__':
   feat_vgg   = np.squeeze(np.zeros((len(filenames), FEATURE_JITTER, FEATURE_DIM_VGG), dtype=np.float32))
   feat_google= np.squeeze(np.zeros((len(filenames), FEATURE_JITTER, FEATURE_DIM_GOOGLE), dtype=np.float32))
   #import pdb; pdb.set_trace()
+
+  print 'Start feature extraction, ', OUTPUT_MAT_FILENAME
 
   for n, fname in enumerate(filenames):
     try:
@@ -65,4 +69,4 @@ if __name__ == '__main__':
     if (n+1) % 10 == 0: print 'End of ', n+1; sys.stdout.flush()
 
   # save mat format
-  sio.savemat('%s_%dx%d_vggoogle_fc6_pool5_7x7_s1.mat' % (DATASET_LIST, MODEL_ORIGINAL_INPUT_SIZE[0], MODEL_ORIGINAL_INPUT_SIZE[1]), {'filenames': filenames, 'feat_vgg': feat_vgg, 'feat_google': feat_google})
+  sio.savemat(OUTPUT_MAT_FILENAME, {'filenames': filenames, 'feat_vgg': feat_vgg, 'feat_google': feat_google})
