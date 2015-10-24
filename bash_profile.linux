@@ -38,3 +38,8 @@ export PYTHONPATH=$CAFFE_HOME/python:
 
 # .build_release/tools/caffe: error while loading shared libraries: libhdf5_hl.so.10: cannot open shared object file: No such file or directory
 # add ANACONDA_HOME/lib
+
+# if you encounter follwoing error when installing torch7
+#cd ~/torch; ./install
+# /home/taey16/torch/install/bin/luajit: symbol lookup error: /home/taey16/anaconda/lib/libreadline.so.6: undefined symbol: PC
+# remove $ANACONDA_HOME/lib in your LD_LIBRARY_PATH
