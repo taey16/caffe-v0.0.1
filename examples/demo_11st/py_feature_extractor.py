@@ -1,13 +1,9 @@
 import os, sys, time, datetime
 import cPickle
 import logging
-import flask
-import werkzeug
 import optparse
-import tornado.wsgi
-import tornado.httpserver
-import numpy as np
 import pandas as pd
+import numpy as np
 from PIL import Image
 import cStringIO as StringIO
 import urllib
@@ -21,34 +17,16 @@ sys.path.insert(0, CAFFE_ROOT + 'python')
 import caffe;
 from caffe import caffe_utils as caffe_utils
 
-# lstm import
-RNN_ROOT = '/works/neuraltalk/'
-sys.path.append(RNN_ROOT)
-from imagernn.solver import Solver
-from imagernn.imagernn_utils import decodeGenerator, eval_split
-
-
-#DATABASE_FILENAME = '/storage/product/11st_6M/11st_6M_image_list.txt.shuffle.txt.bit.pickle'
-DATABASE_FILENAME = '/storage/product/det/unique-labeller_eng_20150625144012.csv.cate_bbox.csv.shuffle_00.csv.readable_only.csv.bit.pickle.webpath.pickle'
-#DATABASE_FILENAME = '/storage/product/11st_6M/11st_380K.shuffle.webpath.bit.pickle'
+#DATABASE_FILENAME = '/storage/product/det/unique-labeller_eng_20150625144012.csv.cate_bbox.csv.shuffle_00.csv.readable_only.csv.bit.pickle.webpath.pickle.inception5.pickle'
+#DATABASE_FILENAME = '/storage/product/11st_6M/11st_380K.shuffle.webpath.bit.pickle.inception5.pickle'
+DATABASE_FILENAME = '/storage/product/11st_6M/11st_380K.shuffle.webpath.bit.pickle.inception5.4096bit.pickle'
 NUM_NEIGHBORS = 10
 UPLOAD_FOLDER = '/tmp/caffe_demos_uploads'
 ENROLL_FOLDER = '/storage/enroll/'
 ALLOWED_IMAGE_EXTENSIONS = set(['png', 'bmp', 'jpg', 'jpe', 'jpeg', 'gif'])
 
 
-# Obtain the flask app object
-app = flask.Flask(__name__)
-
-
-@app.route('/')
-def index():
-  return flask.render_template('index.html', has_result=False)
-
-
-@app.route('/classify_url', methods=['GET'])
-def classify_url():
-  imageurl = flask.request.args.get('imageurl', '')
+def classify_url(clf, imageurl):
   try:
     string_buffer = StringIO.StringIO(urllib.urlopen(imageurl).read())
     image = caffe.io.load_image(string_buffer)
@@ -57,53 +35,16 @@ def classify_url():
     # For any exception we encounter in reading the image, we will just
     # not continue.
     logging.info('URL Image open error: %s', err)
-    return flask.render_template(
-      'index.html', has_result=True,
-      result=(False, 'Cannot open image from URL.')
-    )
+    return False, None
 
   logging.info('Image: %s', imageurl)
-  result = app.clf.classify_image(image)
-  return flask.render_template(
-    'index.html', has_result=True, result=result, imagesrc=imageurl)
+  result = clf.classify_image(image)
+  return True, result
 
 
-@app.route('/enroll_upload', methods=['POST'])
-def enroll_upload():
+def classify_upload(imagefile):
   try:
     # We will save the file to disk for possible data collection.
-    imagefile = flask.request.files['imagefile_enroll']
-    filename_ = str(datetime.datetime.now()).replace(' ', '_') + \
-      werkzeug.secure_filename(imagefile.filename)
-    filename = os.path.join(ENROLL_FOLDER, filename_)
-    imagefile.save(filename)
-    image = exifutil.open_oriented_im(filename)
-    im = PIL.Image.fromarray(np.asarray(image * 255.).astype(np.uint8))
-    im = im.resize( (384, 384), PIL.Image.ANTIALIAS )
-    thumb_filename = filename #+ '_thumb.jpg'
-    im.save(thumb_filename)
-    #scp_command = 'scp %s 1002596@10.202.211.120:%s' % (thumb_filename, ENROLL_FOLDER)
-    #os.system(scp_command)
-    logging.info('Saving to %s. done', thumb_filename)
-    logging.info('%s done', scp_command)
-
-  except Exception as err:
-    logging.info('Uploaded image open error: %s', err)
-    return flask.render_template(
-      'index.html', has_result=True,
-      result=(False, 'Cannot open uploaded image.')
-    )
-
-  result = app.clf.enroll_image(image, filename_)
-  return flask.render_template('index.html', \
-    has_result=True, result=result, imagesrc=embed_image_html(image))
-
-
-@app.route('/classify_upload', methods=['POST'])
-def classify_upload():
-  try:
-    # We will save the file to disk for possible data collection.
-    imagefile = flask.request.files['imagefile']
     filename_ = str(datetime.datetime.now()).replace(' ', '_') + \
       werkzeug.secure_filename(imagefile.filename)
     filename = os.path.join(UPLOAD_FOLDER, filename_)
@@ -119,8 +60,7 @@ def classify_upload():
     )
 
   result = app.clf.classify_image(image)
-  return flask.render_template('index.html', \
-    has_result=True, result=result, imagesrc=embed_image_html(image))
+  return result
 
 
 def embed_image_html(image):
@@ -142,24 +82,13 @@ def allowed_file(filename):
 
 class ImagenetClassifier(object):
   default_args = {
-    'model_def_file': ( '/storage/models/vgg/vgg_layer16_deploy.prototxt'),
-    'pretrained_model_file': (
-      '/storage/models/vgg/vgg_layer16.caffemodel'),
-    'class_labels_file': (
-      '{}/data/ilsvrc12/synset_words.txt'.format(CAFFE_ROOT)),
-    'bet_file': (
-      '{}/data/ilsvrc12/imagenet.bet.pickle'.format(CAFFE_ROOT)),
-  }
-  googlenet_args = {
     'model_def_file': ( '/storage/models/bvlc_googlenet/deploy.prototxt'),
     'pretrained_model_file': (
       '/storage/models/bvlc_googlenet/bvlc_googlenet.caffemodel'),
+    'class_labels_file': (
+      '{}/data/ilsvrc12/synset_words.txt'.format(CAFFE_ROOT)),
   }
   for key, val in default_args.iteritems():
-    if not os.path.exists(val):
-      raise Exception(
-        "File for {} is missing. Should be at: {}".format(key, val))
-  for key, val in googlenet_args.iteritems():
     if not os.path.exists(val):
       raise Exception(
         "File for {} is missing. Should be at: {}".format(key, val))
@@ -171,24 +100,17 @@ class ImagenetClassifier(object):
   database_param = '%s' % DATABASE_FILENAME
 
   def __init__(self, model_def_file, pretrained_model_file,
-         raw_scale, class_labels_file, bet_file, image_dim, gpu_mode):
+         raw_scale, class_labels_file, image_dim, gpu_mode):
     logging.info('Loading net and associated files...')
     if gpu_mode: caffe.set_mode_gpu()
     else: caffe.set_mode_cpu()
 
-    ## load models
-    # vgg16
+    ## load models googlenet
     self.net = caffe.Classifier(
       model_def_file, pretrained_model_file,
       image_dims=(image_dim, image_dim), raw_scale=raw_scale,
-      mean=np.array([103.939, 116.779, 123.68]), channel_swap=(2, 1, 0))
+      mean=np.array([104.0, 116.0, 122.0]), channel_swap=(2, 1, 0))
     logging.info('Load vision model, %s', model_def_file)
-    # googlenet
-    self.net_google = caffe.Classifier( self.googlenet_args['model_def_file'], 
-      self.googlenet_args['pretrained_model_file'], 
-      image_dims=(image_dim, image_dim), raw_scale=raw_scale, 
-      mean=np.float32([104.0, 116.0, 122.0]), channel_swap=(2, 1, 0))
-    logging.info('Load vision model, %s', self.googlenet_args['model_def_file'])
 
     # generate N bit lookup table
     self.lookup = np.asarray([bin(i).count('1') for i in range(1<<16)])
@@ -210,24 +132,14 @@ class ImagenetClassifier(object):
       ])
     self.labels = labels_df.sort('synset_id')['name'].values
 
-    self.bet = cPickle.load(open(bet_file))
-    # A bias to prefer children nodes in single-chain paths
-    # I am setting the value to 0.1 as a quick, simple model.
-    # We could use better psychological models here...
-    self.bet['infogain'] -= np.array(self.bet['preferences']) * 0.1
-
 
   def enroll_image(self, image, filename):
     try:
       # predict
       scores = self.net.predict([image], oversample=True).flatten()
-      scores_google = self.net_google.predict([image], oversample=True).flatten()
       # extract features for retrieval
-      logging.info('fc6 shape: {}'.format(self.net.blobs['fc6'].data.shape))
-      logging.info('pool5/7x7_s1 shape: {}'.format(self.net_google.blobs['pool5/7x7_s1'].data.shape))
-      feat_vgg = np.reshape(self.net.blobs['fc6'].data, (1,10*4096))
-      feat_google = np.reshape(np.squeeze(self.net_google.blobs['pool5/7x7_s1'].data), (1,10*1024))
-      feat = np.hstack((feat_vgg,feat_google))
+      logging.info('pool5/7x7_s1 shape: {}'.format(self.net.blobs['pool5/7x7_s1'].data.shape))
+      feat = np.reshape(np.squeeze(self.net.blobs['pool5/7x7_s1'].data), (1,10*1024))
       logging.info('feat shape: {}'.format(feat.shape))
       # binalize and 16bit-bitpacking
       fea = (np.packbits(np.uint8(feat > 0), axis=1)).astype(np.uint16)
@@ -250,27 +162,19 @@ class ImagenetClassifier(object):
   def classify_image(self, image):
     try:
       # inference
-      starttime = time.time()
-      scores = self.net.predict([image], oversample=True).flatten()
-      scores_google = self.net_google.predict([image], oversample=True).flatten()
-      endtime = time.time()
-      logging.info('Predict done for %d classes in %f', scores.shape[0], endtime - starttime)
-
-      # score concate
-      scores = np.vstack((scores, scores_google))
-      scores = np.mean(scores, axis=0)
+      global_starttime = time.time()
+      scores = self.net.predict([image], oversample=False).flatten()
       # sort top-5 label
       indices = (-scores).argsort()[:5]
       predictions = self.labels[indices]
+      endtime = time.time()
+      logging.info('Predict done for %d classes in %f', scores.shape[0], endtime - global_starttime)
   
       # extract features for retrieval
-      logging.info('fc6 shape: {}'.format(self.net.blobs['fc6'].data.shape))
-      logging.info('pool5/7x7_s1 shape: {}'.format(self.net_google.blobs['pool5/7x7_s1'].data.shape))
+      logging.info('pool5/7x7_s1 shape: {}'.format(self.net.blobs['pool5/7x7_s1'].data.shape))
 
       starttime = time.time()
-      feat_vgg = np.reshape(self.net.blobs['fc6'].data, (1,10*4096))
-      feat_google = np.reshape(np.squeeze(self.net_google.blobs['pool5/7x7_s1'].data), (1,10*1024))
-      feat = np.hstack((feat_vgg,feat_google))
+      feat = np.reshape(np.squeeze(self.net.blobs['pool5/7x7_s1'].data), (1,10*1024))
       endtime = time.time()
       logging.info('feat shape: {}'.format(feat.shape))
       #logging.info('feat_vgg.norm: %s', str(np.linalg.norm(feat_vgg[0,:],1)))
@@ -295,14 +199,6 @@ class ImagenetClassifier(object):
       result_neighbor = []
       for n, neighbor in enumerate(neighbor_list[0:NUM_NEIGHBORS]):
         logging.info("top-{}: {}, {}".format(n, self.database['dic_ref'][neighbor], dist[neighbor]))
-        # ukb
-        #result_neighbor.append('10.202.211.120:2596/PBrain/ukbench/full/%s' % (self.database['dic_ref'][neighbor]))
-        # holidays
-        #result_neighbor.append('10.202.211.120:2596/PBrain/holidays/jpg/%s' % (self.database['dic_ref'][neighbor]))
-        # CDVS_Dataset
-        #result_neighbor.append('10.202.211.120:2596/PBrain/CDVS_Dataset/%s' % (self.database['dic_ref'][neighbor]))
-        # det_Dataset
-        #result_neighbor.append('10.202.211.120:2596/PBrain/product/det/%s' % (self.database['dic_ref'][neighbor]))
         # general web path
         result_neighbor.append('10.202.211.120:2596/PBrain/%s' % (self.database['dic_ref'][neighbor]))
 
@@ -314,42 +210,18 @@ class ImagenetClassifier(object):
       ]
       logging.info('result: %s', str(meta))
 
-      # Compute expected information gain
-      expected_infogain = np.dot( self.bet['probmat'], scores[self.bet['idmapping']])
-      expected_infogain *= self.bet['infogain']
-
-      # sort the scores
-      infogain_sort = expected_infogain.argsort()[::-1]
-      bet_result = [(self.bet['words'][v], '%.5f' % expected_infogain[v]) for v in infogain_sort[:5]]
-      logging.info('bet result: %s', str(bet_result))
-
-      return (True, meta, bet_result, '%.3f' % (endtime - starttime), str(''), result_neighbor)
+      return (True, meta, '%.3f' % (endtime - global_starttime), str(''), result_neighbor)
 
     except Exception as err:
       logging.info('Classification error: %s', err)
       return (False, 'Something went wrong when classifying the ' 'image. Maybe try another one?')
 
 
-def start_tornado(app, port=5000):
-  http_server = tornado.httpserver.HTTPServer(tornado.wsgi.WSGIContainer(app))
-  http_server.listen(port)
-  print("Tornado server starting on port {}".format(port))
-  tornado.ioloop.IOLoop.instance().start()
-
-
-def start_from_terminal(app):
+def start_from_terminal():
   """
   Parse command line options and start the server.
   """
   parser = optparse.OptionParser()
-  parser.add_option(
-    '-d', '--debug',
-    help="enable debug mode",
-    action="store_true", default=False)
-  parser.add_option(
-    '-p', '--port',
-    help="which port to serve content on",
-    type='int', default=5000)
   parser.add_option(
     '-g', '--gpu',
     help="use gpu mode",
@@ -359,18 +231,17 @@ def start_from_terminal(app):
   ImagenetClassifier.default_args.update({'gpu_mode': opts.gpu})
 
   # Initialize classifier + warm start by forward for allocation
-  app.clf = ImagenetClassifier(**ImagenetClassifier.default_args)
-  app.clf.net.forward()
-
-  if opts.debug:
-    app.run(debug=True, host='10.202.35.109', port=opts.port)
-  else:
-    start_tornado(app, opts.port)
+  clf = ImagenetClassifier(**ImagenetClassifier.default_args)
+  clf.net.forward()
+  
+  import pdb; pdb.set_trace()
+  classify_url(clf, 'http://blog.trashness.com/wp-content/uploads/2012/12/boat-shoe-socks-men-fair-isle.jpg')
 
 
 if __name__ == '__main__':
+  import pdb; pdb.set_trace()
   logging.getLogger().setLevel(logging.INFO)
   if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-  start_from_terminal(app)
+  start_from_terminal()
 

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Caffe demos">
+    <meta name="author" content="BVLC (http://bvlc.eecs.berkeley.edu/)">
+
+    <title>Alfred</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="//code.jquery.com/jquery-2.1.1.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+    <!-- Script to instantly classify an image once it is uploaded. -->
+    <script type="text/javascript">
+      $(document).ready(
+        function(){
+          $('#classifyfile').attr('disabled',true);
+          // classify_image
+          $('#imagefile').change(
+            function(){
+              if ($(this).val()){
+                $('#formupload').submit();
+              }
+            }
+          );
+          // enroll_image
+          $('#imagefile_enroll').change(
+            function(){
+              if ($(this).val()){
+                $('#formupload_enroll').submit();
+              }
+            }
+          );
+        }
+      );
+    </script>
+
+    <style>
+    body {
+      font-family: "Gill Sans", Helvetica, Arial, sans-serif;
+      line-height:1.5em;
+      color: #232323;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 {
+      font-family: Gill Sans, serif;
+      line-height:1.5em;
+      border-bottom: 1px solid #ccc;
+    }
+    </style>
+  </head>
+
+  <body>
+    <!-- Begin page content -->
+    <div class="container">
+      <div class="page-header">
+        <h3><a href="/">Alfred-v0.0.1</a></h3>
+      </div>
+
+      <!-- image upload, start classiy_url -->
+      <form role="form" action="classify_url" method="get">
+        <div class="form-group">
+          <div class="input-group">
+            <input type="text" class="form-control" name="imageurl" id="imageurl" placeholder="Provide an image URL">
+            <span class="input-group-btn">
+              <input class="btn btn-primary" value="Send" type="submit" id="classifyurl"></input>
+            </span>
+          </div><!-- /input-group -->
+        </div>
+      </form>
+
+      <!-- image upload, start classiy_upload -->
+      <form id="formupload" class="form-inline" role="form" action="classify_upload" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="imagefile">Or take(uplode) a photo:</label>
+          <input type="file" name="imagefile" id="imagefile">
+        </div>
+      </form>
+
+      <!-- image upload, start enroll_upload -->
+      <form id="formupload_enroll" class="form-inline" role="form" action="enroll_upload" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="imagefile_enroll">Enroll image:</label>
+          <input type="file" name="imagefile_enroll" id="imagefile_enroll">
+        </div>
+      </form>
+
+
+      {% if has_result %}
+        {% if not result[0] %}
+          <!-- we have error in the result. -->
+          <div class="alert alert-danger">{{ result[1] }}</div>
+        {% else %}
+          <div>
+            <h4>Auto-tagging</h4>
+              <!-- <a href="/classify_url?imageurl=http%3A%2F%2Fi.telegraph.co.uk%2Fmultimedia%2Farchive%2F02351%2Fcross-eyed-cat_2351472k.jpg">Click for a Quick Example</a> -->
+          </div>
+          <div class="media">
+            <a class="pull-left" href="#"><img class="media-object" width="192" height="192" src={{ imagesrc }}></a>
+            <div class="media-body">
+              <div class="bs-example bs-example-tabs">
+                <ul id="myTab" class="nav nav-tabs">
+                  <li class="active"><a href="#infopred" data-toggle="tab">Maximally accurate</a></li>
+                  <!-- <li><a href="#flatpred" data-toggle="tab">Maximally specific</a></li> -->
+                </ul>
+                <div id="myTabContent" class="tab-content">
+                  <div class="tab-pane fade in active" id="infopred">
+                    <ul class="list-group">
+                      {% for single_pred in result[2] %}
+                        <li class="list-group-item">
+                        <span class="badge">{{ single_pred[1] }}</span>
+                        <h4 class="list-group-item-heading">
+                          <a href="https://www.google.com/?gfe_rd=cr&ei=WSzUVeeuMovY8QXYqJDIDA&gws_rd=cr&fg=1#q={{single_pred[0]}}/image" target="_blank">{{ single_pred[0] }}</a>
+                        </h4>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  <!-- 
+                  <div class="tab-pane fade" id="flatpred">
+                    <ul class="list-group">
+                      {% for single_pred in result[1] %}
+                        <li class="list-group-item">
+                        <span class="badge">{{ single_pred[1] }}</span>
+                        <h4 class="list-group-item-heading">
+                          <a href="https://www.google.com/?gfe_rd=cr&ei=WSzUVeeuMovY8QXYqJDIDA&gws_rd=cr&fg=1#q={{single_pred[0]}}/image" target="_blank">{{ single_pred[0] }}</a>
+                        </h4>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 
+          <h3>Description</h3>
+          <h4>{{ result[4] }}</h4>
+          -->
+
+          <h3>Matched images</h3>
+            <table class="d_table">
+              <!-- 
+              {% for item in result[5] %}
+                <tr>
+                  <td>
+                    <a href="/classify_url?imageurl=http://{{item}}"><img src="http://{{item}}" height="340" width="340"></td></a>
+                </tr>
+              {% endfor %}
+              -->
+              <tr>
+                {% for item in result[5] %}
+                  <td>
+                    <a href="/classify_url?imageurl=http://{{item}}"><img src="http://{{item}}" height="224" width="214"></td></a>
+                {% endfor %}
+              </tr>
+            </table>
+            <p>{{ result[3] }} sec.</p>
+          {% endif %}
+        {% endif %}
+
+    <hr>
+    <div id="footer">
+      <div class="container">
+        <p>&copy; Machine Intelligence Lab., SK Planet</p>
+      </div>
+    </div>
+  </body>
+</html>
