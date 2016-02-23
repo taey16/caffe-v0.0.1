@@ -1,6 +1,4 @@
 import numpy as np
-import PIL.Image
-import scipy.io as sio
 import sys
 import caffe
 from caffe import caffe_utils as utils
@@ -8,8 +6,14 @@ import datetime
 
 CAFFE_ROOT='/works/caffe/'
 
-MODEL_DEPLOY_FILE = '/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-152-deploy.prototxt'
-MODEL_WEIGHT_FILE = '/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-152-model.caffemodel'
+MODEL_DEPLOY_FILE = \
+  '/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-50-deploy.prototxt'
+  #'/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-101-deploy.prototxt'
+  #'/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-152-deploy.prototxt'
+MODEL_WEIGHT_FILE = \
+  '/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-50-model.caffemodel'
+  #'/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-101-model.caffemodel'
+  #'/storage/ImageNet/ILSVRC2012/model/resnet/ResNet_caffe_models/ResNet-152-model.caffemodel'
 
 MODEL_ORIGINAL_INPUT_SIZE = 256, 256
 MODEL_INPUT_SIZE = 224, 224
@@ -22,8 +26,7 @@ MODEL_MEAN_VALUE = np.squeeze(np.array( caffe.io.blobproto_to_array(blob) ))
 DATASET_ROOT = '/storage/ImageNet/ILSVRC2012/val/'
 DATASET_INPUT_LIST = '/storage/ImageNet/ILSVRC2012/val_synset.txt'
 
-FEATURE_JITTER = 10
-
+oversample = True
 
 if __name__ == '__main__':
   #import pdb; pdb.set_trace()
@@ -32,7 +35,7 @@ if __name__ == '__main__':
   net = caffe.Classifier( \
     model_file=MODEL_DEPLOY_FILE, 
     pretrained_file=MODEL_WEIGHT_FILE, 
-    image_dims=(MODEL_ORIGINAL_INPUT_SIZE[0], MODEL_ORIGINAL_INPUT_SIZE[1], 3),
+    image_dims=(MODEL_ORIGINAL_INPUT_SIZE[0], MODEL_ORIGINAL_INPUT_SIZE[1]),
     raw_scale=255., # scale befor mean subtraction
     input_scale=None, # scale after mean subtraction
     mean = MODEL_MEAN_VALUE, 
@@ -51,11 +54,9 @@ if __name__ == '__main__':
       im = caffe.io.load_image(fname)
       toc_load = datetime.datetime.now(); elapsed_load = toc_load - tic_load
       tic_resize = datetime.datetime.now()
-      #im = caffe.io.resize_image(im, \
-      #  (MODEL_ORIGINAL_INPUT_SIZE[0], MODEL_ORIGINAL_INPUT_SIZE[1]))
       toc_resize = datetime.datetime.now(); elapsed_resize = toc_resize - tic_resize
       tic_predict = datetime.datetime.now()
-      scores = net.predict([im], True) 
+      scores = net.predict([im], oversample) 
       elapsed = datetime.datetime.now() - tic_predict
     except Exception as err:
       print 'error: filename: ', fname
