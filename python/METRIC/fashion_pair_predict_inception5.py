@@ -20,8 +20,7 @@ MODEL_ORIGINAL_INPUT_SIZE = 256, 256
 MODEL_INPUT_SIZE = 224, 224
 MODEL_MEAN_VALUE = np.float32([104.0, 116.0, 122.0])
 
-FEATURE_JITTER = 1
-FEATURE_DIM_GOOGLE = 1024
+FEATURE_JITTER = 10
 
 input_filename = '/storage/product/fashion_pair/fashion_pair_test.csv'
 prefix = '/data1/october_11st/october_11st_imgs/'
@@ -69,6 +68,10 @@ if __name__ == '__main__':
       src.data[:] = inputs_ref
       net.forward(end='pool5/7x7_s1')
       feat_ref= np.squeeze(net.blobs['pool5/7x7_s1'].data)
+
+      if FEATURE_JITTER == 10:
+        feat_q  = np.mean(feat_q,axis=0)
+        feat_ref= np.mean(feat_ref,axis=0)
 
       feat_q = feat_q / LA.norm(feat_q, 2.0)
       feat_ref = feat_ref / LA.norm(feat_ref, 2.0)
