@@ -21,15 +21,17 @@ MODEL_INPUT_SIZE = 224, 224
 MODEL_MEAN_VALUE = np.float32([104.0, 116.0, 122.0])
 
 FEATURE_JITTER = 10
+#FEATURE_JITTER = 1
 
 input_filename = '/storage/product/fashion_pair/fashion_pair_test.csv'
 prefix = '/data1/october_11st/october_11st_imgs/'
+output_filename = '/works/caffe-v0.0.1/python/METRIC/fashion_pair_predict_inception5.py'+'.jitter'+str(FEATURE_JITTER)+'.log'
 
 entries = \
   [entry.strip().split(',') for entry in open(input_filename, 'r')]
-
+log = open(output_filename,'w')
 if __name__ == '__main__':
-  import pdb; pdb.set_trace()
+  #import pdb; pdb.set_trace()
   caffe.set_device(0)
   caffe.set_mode_gpu()
   net = caffe.Classifier( 
@@ -79,6 +81,9 @@ if __name__ == '__main__':
       distance = LA.norm(feat_q - feat_ref, 2.0)
       #distance = np.sum(np.sqrt(np.power(feat_q - feat_ref, 2.0)))
       print('%d %s %s %f %d' %(n, query_filename, ref_filename, distance, label))
-
+      log.write('%d\t%f\n' %(label, distance))
     except:
       print 'ERROR: query_filename: ', fname[0]
+
+
+log.close()
