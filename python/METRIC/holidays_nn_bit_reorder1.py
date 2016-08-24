@@ -24,7 +24,7 @@ if __name__ == '__main__':
   for n, fname in enumerate(filename):
     dic_ref[n], dic_idx[fname] = fname, n
 
-  #import pdb; pdb.set_trace()
+  import pdb; pdb.set_trace()
   #fea_vgg = fea_vgg - np.mean(np.reshape(fea_vgg, (1491*10, 4096)), axis=0)
   #fea_google= fea_google - np.mean(np.reshape(fea_google, (1491*10, 1024)), axis=0)
 
